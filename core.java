@@ -1,38 +1,52 @@
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.http.*;
+import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class core {
-    public static void main(String[] args) throws InterruptedException {
-        String[] urls = new String[3];
-        urls[0] = "https://www.google.com";
-        urls[1] = "https://rileyprimavera.vercel.app";
-        urls[2] = "https://w3schools.com";
-        APIStatus[] stati = new APIStatus[3];
-        for (int i = 0; i < stati.length; i++) {
-            stati[i] = new APIStatus();
-            stati[i].SetURL(urls[i]);
-            stati[i].BuildRequest();
-        }
-        int c = 0;
+    public static void main(String[] args) throws InterruptedException{
+        Scanner input = new Scanner(System.in);
+        APIStatus[] stati = InitializeURLs();
+        
+        CompletableFuture.supplyAsync(() -> {
+            while (true) {
+                for (int i = 0; i < stati.length; i++) {
+                    APIStatus x = stati[i];
+                    if (x.getConstraint() < (double) ((System.nanoTime() - x.getTOLP())/1000000)) {
+                        ping(x);
+                    }
+                }
+                try {TimeUnit.SECONDS.sleep(3);} 
+                catch (InterruptedException e) {e.printStackTrace();}
+        }});
+
         while (true) {
-            for (int i = 0; i < stati.length; i++) {
-                APIStatus x = stati[i];
-                ping(x).thenRun(() -> {
-                    System.out.println("Pinged " + x.GetURL() + " with latency: " + x.GetLatency() + "ms");
-                });
+            System.out.println("1. to return latest ping \n2. to return average latency \n3. to exit \n");
+            int command = input.nextInt();
+            if (command == 1) {
+                for (int i = 0; i < stati.length; i++) {
+                    APIStatus x = stati[i];
+                    System.out.println("Latest ping for " + x.GetURL() + ": " + x.GetLatency() + "ms");
+                }
+                System.out.println("\n");
+            } 
+            else if (command == 2) {
+                for (int i = 0; i <stati.length; i++) {
+                    APIStatus x = stati[i];
+                    System.out.println("Latency average for " + x.GetURL() + ": " + x.GetAverageLatency() + "ms");
+                }
+                System.out.println("\n");
             }
-            if (c == 10) {
-                System.out.println("average Latencies: \n" + stati[0].GetURL() + ": " + stati[0].GetAverageLatency() + "ms\n" +
-                        stati[1].GetURL() + ": " + stati[1].GetAverageLatency() + "ms\n" +
-                        stati[2].GetURL() + ": " + stati[2].GetAverageLatency() + "ms\n");
-                c = 0;
+            else if (command == 3) {
+                System.exit(0);
             }
             else {
-                c++;
+                System.out.println("invalid command \n");
             }
-            TimeUnit.SECONDS.sleep(10);
         }
     }
 
@@ -40,6 +54,7 @@ public class core {
         HttpClient client = HttpClient.newHttpClient();
         CompletableFuture<HttpResponse<String>> response = CompletableFuture.supplyAsync(() -> {
             long time1 = System.nanoTime();
+            target.SetTOLP(time1);
             try {
                     HttpResponse res = client.send(target.GetRequest(), HttpResponse.BodyHandlers.ofString());
                     long time2 = System.nanoTime();
@@ -51,5 +66,22 @@ public class core {
             return null;
         });
         return response;
+    }
+
+    public static APIStatus[] InitializeURLs() {
+        File APIs = new File(".gitignore/APIs.txt");
+        ArrayList<APIStatus> stati = new ArrayList<APIStatus>();
+        try (Scanner parse = new Scanner(APIs)) {
+            while (parse.hasNextLine()) {
+                String x = parse.nextLine();
+                System.out.println(x);
+                stati.add(new APIStatus(x));
+            }
+        }
+        catch (FileNotFoundException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+        return stati.toArray(new APIStatus[stati.size()]);
     }
 }
