@@ -1,7 +1,7 @@
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.http.*;
+import java.io.InputStream;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 public class core {
     public static void main(String[] args) throws InterruptedException{
+        System.out.println(core.class.getResource("APIs.txt"));
         Scanner input = new Scanner(System.in);
         APIStatus[] stati = InitializeURLs();
         
@@ -23,7 +24,6 @@ public class core {
                 try {TimeUnit.SECONDS.sleep(3);} 
                 catch (InterruptedException e) {e.printStackTrace();}
         }});
-
         while (true) {
             System.out.println("1. to return latest ping \n2. to return average latency \n3. to exit \n");
             int command = input.nextInt();
@@ -69,7 +69,8 @@ public class core {
     }
 
     public static APIStatus[] InitializeURLs() {
-        File APIs = new File(".gitignore/APIs.txt");
+        //File APIs = new File("data/APIs.txt");
+        InputStream APIs = core.class.getResourceAsStream("/APIs.txt");
         ArrayList<APIStatus> stati = new ArrayList<APIStatus>();
         try (Scanner parse = new Scanner(APIs)) {
             while (parse.hasNextLine()) {
@@ -78,7 +79,7 @@ public class core {
                 stati.add(new APIStatus(x));
             }
         }
-        catch (FileNotFoundException e) {
+        catch (Exception e) {
             System.out.println("An error occurred.");
             e.printStackTrace();
         }
