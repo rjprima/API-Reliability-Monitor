@@ -1,5 +1,5 @@
 import java.net.URI;
-import java.net.http.*;
+import java.net.http.HttpRequest;
 
 public class APIStatus {
     private String URL;
